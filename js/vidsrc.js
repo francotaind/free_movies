@@ -4,12 +4,6 @@ import { VIDSRC_MIRRORS } from './config.js';
 import { normalize, tmdb } from './tmdb.js';
 
 const MIRROR_KEY = 'fm:mirror';
-const BLOCK_POPUPS_KEY = 'fm:block-popups';
-
-// The sandbox the player runs in when pop-up blocking is on. It may run
-// scripts and keep its own storage, but leaving out allow-popups and
-// allow-top-navigation stops it opening ad tabs or redirecting this page.
-export const PLAYER_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presentation';
 const LATEST_KEY = 'fm:latest:v1';
 const LATEST_TTL = 30 * 60 * 1000;
 
@@ -18,15 +12,6 @@ export function currentMirror() {
   let saved = null;
   try { saved = localStorage.getItem(MIRROR_KEY); } catch (error) { /* storage blocked */ }
   return VIDSRC_MIRRORS.includes(saved) ? saved : VIDSRC_MIRRORS[0];
-}
-
-/** Whether to sandbox the player. On unless the viewer turned it off. */
-export function blockPopups() {
-  try { return localStorage.getItem(BLOCK_POPUPS_KEY) !== 'off'; } catch (error) { return true; }
-}
-
-export function setBlockPopups(on) {
-  try { localStorage.setItem(BLOCK_POPUPS_KEY, on ? 'on' : 'off'); } catch (error) { /* storage blocked */ }
 }
 
 export function setMirror(mirror) {

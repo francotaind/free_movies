@@ -8,7 +8,7 @@
 //   - ?startAt=<seconds> starts playback at a saved position
 import { MIN_RESUME_SECONDS, resumeSeconds } from './store.js';
 import { clock } from './util.js';
-import { blockPopups, currentMirror, embedUrl, PLAYER_SANDBOX, setBlockPopups, setMirror } from './vidsrc.js';
+import { currentMirror, embedUrl, setMirror } from './vidsrc.js';
 
 const UP_NEXT_SECONDS = 8;
 const STATUSES = ['playing', 'paused', 'seeked', 'completed'];
@@ -31,7 +31,6 @@ function wholeNumber(value) {
 export function mountPlayer(root, title, store) {
   let frame = root.querySelector('[data-player] iframe');
   const mirrorSelect = root.querySelector('[data-mirror]');
-  const popupToggle = root.querySelector('[data-block-popups]');
   const resumeBar = root.querySelector('[data-resume-bar]');
   const resumeTime = root.querySelector('[data-resume-time]');
   const restartButton = root.querySelector('[data-restart]');
@@ -50,9 +49,6 @@ export function mountPlayer(root, title, store) {
     // Swap in a fresh frame instead of changing src: re-pointing a loaded frame
     // adds a step to the browser's history, which would break the Back button.
     const fresh = frame.cloneNode(false);
-    // The sandbox must be set before src: it can't be changed once a frame loads.
-    if (blockPopups()) fresh.setAttribute('sandbox', PLAYER_SANDBOX);
-    else fresh.removeAttribute('sandbox');
     fresh.src = embedUrl(currentMirror(), title.mediaType, title.tmdbId, title.season, title.episode, startedAt);
     frame.replaceWith(fresh);
     frame = fresh;
@@ -145,28 +141,17 @@ export function mountPlayer(root, title, store) {
     load(0);
   }
 
-  // Reload the player where you are, after a server or pop-up setting change.
-  function reloadInPlace() {
-    const position = latest && latest.status !== 'completed' ? latest.progress : startedAt;
-    load(position >= MIN_RESUME_SECONDS ? position : 0);
-  }
-
   function onMirrorChange() {
     setMirror(mirrorSelect.value);
-    reloadInPlace();
-  }
-
-  function onPopupToggle() {
-    setBlockPopups(popupToggle.checked);
-    reloadInPlace();
+    // Keep your place across servers.
+    const position = latest && latest.status !== 'completed' ? latest.progress : startedAt;
+    load(position >= MIN_RESUME_SECONDS ? position : 0);
   }
 
   window.addEventListener('message', onMessage);
   restartButton.addEventListener('click', onRestart);
   mirrorSelect.value = currentMirror();
   mirrorSelect.addEventListener('change', onMirrorChange);
-  popupToggle.checked = blockPopups();
-  popupToggle.addEventListener('change', onPopupToggle);
   upNext.querySelector('[data-up-next-cancel]').addEventListener('click', hideUpNext);
 
   load(resumeSeconds(store.get(title.mediaType, title.tmdbId, title.season, title.episode)));
