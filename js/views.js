@@ -541,7 +541,10 @@ function watchPage({ heading, backHash, episodeLine, overview, controls, below, 
               )}</select>
             </label>
           </div>
-          <p class="hint">Player not loading? Try another server.</p>
+          <label class="field field--check">
+            <input type="checkbox" data-block-popups> Block pop-up ads
+          </label>
+          <p class="hint">Player not loading? Try another server, or turn off pop-up blocking.</p>
         </div>
       </div>
       ${below || ''}
