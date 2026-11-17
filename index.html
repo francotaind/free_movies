@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#08090d">
+  <meta name="description" content="Browse movies and series, and pick up where you left off.">
+  <title>Free Movies</title>
+  <link rel="preconnect" href="https://api.themoviedb.org">
+  <link rel="preconnect" href="https://image.tmdb.org">
+  <link rel="preload" href="fonts/archivo-latin-wdth-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link href="css/app.css" rel="stylesheet">
+</head>
+<body>
+  <header class="nav" data-nav>
+    <a class="brand" href="#/">Free Movies</a>
+    <nav class="nav__links" aria-label="Browse">
+      <a href="#/" data-nav-key="home">Home</a>
+      <a href="#/movies" data-nav-key="movies">Movies</a>
+      <a href="#/series" data-nav-key="series">Series</a>
+      <a href="#/genres" data-nav-key="genres">Genres</a>
+      <a href="#/countries" data-nav-key="countries">Countries</a>
+      <a href="#/history" data-nav-key="history">History</a>
+    </nav>
+    <form class="search" role="search" data-search>
+      <input type="search" name="q" placeholder="Search titles" aria-label="Search movies and series" required>
+    </form>
+  </header>
+
+  <main id="view" tabindex="-1" aria-busy="true"></main>
+
+  <noscript><p class="notice">Free Movies needs JavaScript to load titles and remember your place.</p></noscript>
+
+  <footer class="footer">
+    <p>Free Movies hosts no video. Title information and artwork come from TMDB; playback is provided by VidSrc.
+      Your watch history is saved in this browser only.</p>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
