@@ -185,3 +185,24 @@ test('formatting helpers', () => {
   assert.equal(pageNumber('99999'), 500);
   assert.equal(pageNumber('7'), 7);
 });
+
+test('VidCore player messages are read in either shape', async () => {
+  const { readVidcoreEvent } = await import('../js/servers.js');
+  assert.deepEqual(readVidcoreEvent('vidcore:play'), { status: 'playing', progress: null, duration: null });
+  assert.deepEqual(readVidcoreEvent({ type: 'vidcore:ended' }), { status: 'completed', progress: null, duration: null });
+  assert.deepEqual(readVidcoreEvent({ event: 'vidcore:pause', data: { currentTime: 61.5, duration: 5400 } }),
+    { status: 'paused', progress: 61.5, duration: 5400 });
+  assert.equal(readVidcoreEvent({ type: 'PLAYER_EVENT' }), null);
+  assert.equal(readVidcoreEvent('vidcore:hacked'), null);
+  assert.equal(readVidcoreEvent(null), null);
+  assert.deepEqual(readVidcoreEvent({ type: 'vidcore:pause', currentTime: 'NaN' }).progress, null);
+});
+
+test('player URLs follow each provider', async () => {
+  const { embedUrl } = await import('../js/servers.js');
+  const vidsrc = { provider: 'vidsrc', host: 'https://vsembed.ru' };
+  const vidcore = { provider: 'vidcore', host: 'https://vidcore.org' };
+  assert.equal(embedUrl(vidsrc, 'tv', 1399, 1, 2, 300.7), 'https://vsembed.ru/embed/tv/1399/1/2?autoplay=1&autonext=0&startAt=300');
+  assert.equal(embedUrl(vidcore, 'movie', 603, null, null, 0), 'https://vidcore.org/embed/movie/603?autoplay=true');
+  assert.equal(embedUrl(vidcore, 'tv', 1399, 1, 2, 300), 'https://vidcore.org/embed/tv/1399/1/2?autoplay=true&startAt=300');
+});

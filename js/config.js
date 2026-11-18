@@ -11,6 +11,19 @@ export const IMAGE_BASE = 'https://image.tmdb.org/t/p/';
 // can switch on the watch page. If one is blocked where you are, put another first.
 export const VIDSRC_MIRRORS = ['https://vsembed.ru', 'https://vidsrc.sh', 'https://vsembed.su'];
 
+// VidCore is a second player provider (https://vidcore.org). It shows no ads,
+// but it doesn't report the playback position, so watching there can't save
+// your place: it only records that you started or finished a title.
+export const VIDCORE_HOST = 'https://vidcore.org';
+
+// The choices in the watch page's Server menu, default first.
+export const SERVERS = [
+  ...VIDSRC_MIRRORS.map((host, index) => ({
+    id: host, provider: 'vidsrc', host, label: `Server ${index + 1}`,
+  })),
+  { id: VIDCORE_HOST, provider: 'vidcore', host: VIDCORE_HOST, label: `Server ${VIDSRC_MIRRORS.length + 1} (no ads)` },
+];
+
 export const COUNTRIES = {
   US: 'United States', IN: 'India', GB: 'United Kingdom', FR: 'France',
   DE: 'Germany', JP: 'Japan', KR: 'South Korea', CA: 'Canada',

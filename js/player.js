@@ -1,14 +1,18 @@
-// Watch page: loads the VidSrc player, saves your position as you watch,
-// and resumes from it next time.
+// Watch page: loads the player, saves your position as you watch, and
+// resumes from it next time.
 //
-// VidSrc API (https://vsembed.ru/vidsrc/docs/):
-//   - the player posts { type: 'PLAYER_EVENT', data: { player_info,
-//     player_status, player_progress, player_duration } } to this page;
-//     status is playing (about every 5s), paused, seeked or completed
-//   - ?startAt=<seconds> starts playback at a saved position
+// VidSrc (https://vsembed.ru/vidsrc/docs/) posts { type: 'PLAYER_EVENT',
+// data: { player_info, player_status, player_progress, player_duration } }
+// to this page about every 5s while playing, and on pause, seek and end.
+//
+// VidCore (https://vidcore.org) posts only vidcore:play, vidcore:pause and
+// vidcore:ended, with no position, so on VidCore a title is marked started
+// and finished but your place isn't updated.
+//
+// Both take ?startAt=<seconds> to open at a saved position.
+import { currentServer, embedUrl, readVidcoreEvent, setServer } from './servers.js';
 import { MIN_RESUME_SECONDS, resumeSeconds } from './store.js';
 import { clock } from './util.js';
-import { currentMirror, embedUrl, setMirror } from './vidsrc.js';
 
 const UP_NEXT_SECONDS = 8;
 const STATUSES = ['playing', 'paused', 'seeked', 'completed'];
@@ -31,6 +35,7 @@ function wholeNumber(value) {
 export function mountPlayer(root, title, store) {
   let frame = root.querySelector('[data-player] iframe');
   const mirrorSelect = root.querySelector('[data-mirror]');
+  const serverNote = root.querySelector('[data-server-note]');
   const resumeBar = root.querySelector('[data-resume-bar]');
   const resumeTime = root.querySelector('[data-resume-time]');
   const restartButton = root.querySelector('[data-restart]');
@@ -49,11 +54,13 @@ export function mountPlayer(root, title, store) {
     // Swap in a fresh frame instead of changing src: re-pointing a loaded frame
     // adds a step to the browser's history, which would break the Back button.
     const fresh = frame.cloneNode(false);
-    fresh.src = embedUrl(currentMirror(), title.mediaType, title.tmdbId, title.season, title.episode, startedAt);
+    const server = currentServer();
+    fresh.src = embedUrl(server, title.mediaType, title.tmdbId, title.season, title.episode, startedAt);
     frame.replaceWith(fresh);
     frame = fresh;
     resumeBar.hidden = startedAt === 0;
     resumeTime.textContent = clock(startedAt);
+    serverNote.hidden = server.provider !== 'vidcore';
     hideUpNext();
   }
 
@@ -72,9 +79,14 @@ export function mountPlayer(root, title, store) {
   }
 
   function onMessage(event) {
+    if (!fromPlayer(event.source)) return;
+    const vidcore = readVidcoreEvent(event.data);
+    if (vidcore) {
+      onVidcoreEvent(vidcore);
+      return;
+    }
     const message = event.data;
     if (!message || message.type !== 'PLAYER_EVENT' || !message.data || typeof message.data !== 'object') return;
-    if (!fromPlayer(event.source)) return;
 
     const data = message.data;
     const info = data.player_info || {};
@@ -112,6 +124,30 @@ export function mountPlayer(root, title, store) {
     else if (status === 'playing' || status === 'seeked') hideUpNext();
   }
 
+  // VidCore says when playback starts, pauses and ends, but not where. Save a
+  // position only if the message happens to carry one; always record the end.
+  function onVidcoreEvent({ status, progress, duration }) {
+    const saved = store.get(title.mediaType, title.tmdbId, title.season, title.episode);
+    if (status === 'completed') {
+      store.setProgress(title.mediaType, title.tmdbId, title.season, title.episode, {
+        progress: progress ?? (saved ? saved.duration : 0),
+        duration: duration ?? (saved ? saved.duration : 0),
+        finished: true,
+      });
+      latest = { status, progress: progress || 0, duration: duration || 0, season: title.season, episode: title.episode };
+      showUpNext();
+      return;
+    }
+    hideUpNext();
+    if (progress === null) return;
+    if (!settled && progress < startedAt - 5) return; // the player hasn't jumped to startAt yet
+    settled = true;
+    latest = { status, progress, duration: duration || (saved ? saved.duration : 0), season: title.season, episode: title.episode };
+    store.setProgress(title.mediaType, title.tmdbId, title.season, title.episode, {
+      progress: latest.progress, duration: latest.duration,
+    });
+  }
+
   function hideUpNext() {
     if (countdown) { clearInterval(countdown); countdown = null; }
     upNext.hidden = true;
@@ -142,7 +178,7 @@ export function mountPlayer(root, title, store) {
   }
 
   function onMirrorChange() {
-    setMirror(mirrorSelect.value);
+    setServer(mirrorSelect.value);
     // Keep your place across servers.
     const position = latest && latest.status !== 'completed' ? latest.progress : startedAt;
     load(position >= MIN_RESUME_SECONDS ? position : 0);
@@ -150,7 +186,7 @@ export function mountPlayer(root, title, store) {
 
   window.addEventListener('message', onMessage);
   restartButton.addEventListener('click', onRestart);
-  mirrorSelect.value = currentMirror();
+  mirrorSelect.value = currentServer().id;
   mirrorSelect.addEventListener('change', onMirrorChange);
   upNext.querySelector('[data-up-next-cancel]').addEventListener('click', hideUpNext);
 

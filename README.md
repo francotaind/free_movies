@@ -4,7 +4,7 @@ A static movie and series site: browse, watch, and pick up where you left off. I
 HTML, CSS and JavaScript with no build step, so it runs on GitHub Pages as is.
 
 - **Catalogue**: titles, artwork, cast and episode lists come from [TMDB](https://www.themoviedb.org/), fetched by the visitor's browser.
-- **Player**: [VidSrc](https://vsembed.ru/vidsrc/docs/) embeds. This site hosts no video.
+- **Player**: [VidSrc](https://vsembed.ru/vidsrc/docs/) embeds by default, with [VidCore](https://vidcore.org) as an ad-free extra server. This site hosts no video.
 - **Watch history**: saved in the visitor's browser (`localStorage`). There are no accounts, so
   history doesn't follow you to another browser or device.
 
@@ -35,6 +35,10 @@ It has to be served over HTTP; opening `index.html` straight from disk won't loa
    "Start from the beginning" clears the saved position.
 4. A title past 92% counts as watched. A finished episode puts the next one in "Continue watching".
 
+On the VidCore server, step 2 is limited: VidCore only reports play, pause and end, not the
+position. The page still opens VidCore at your saved place and marks titles watched when they end,
+but it can't update where you stopped. Switch back to a VidSrc server to keep saving your place.
+
 ## Where VidSrc is used
 
 | VidSrc API | Used for |
@@ -50,8 +54,10 @@ It has to be served over HTTP; opening `index.html` straight from disk won't loa
 Everything is in `js/config.js`:
 
 - `TMDB_API_KEY`: sent from the visitor's browser, so anyone can read it. Use a key made for this site.
-- `VIDSRC_MIRRORS`: player hosts. The first is the default; viewers can switch on the watch page.
-  If one is blocked where you are, put another first.
+- `VIDSRC_MIRRORS`: VidSrc player hosts. The first is the default; viewers can switch on the watch
+  page. If one is blocked where you are, put another first.
+- `VIDCORE_HOST` and `SERVERS`: the full Server menu, VidCore included. Remove VidCore from
+  `SERVERS` to hide it.
 
 ## Files
 
@@ -62,5 +68,6 @@ Everything is in `js/config.js`:
 | `js/views.js` | One function per page |
 | `js/player.js` | Player loading, progress saving, resume, up next |
 | `js/store.js` | Watch history in `localStorage` |
-| `js/tmdb.js`, `js/vidsrc.js` | API clients |
+| `js/servers.js` | Server menu, player URLs for VidSrc and VidCore |
+| `js/tmdb.js`, `js/vidsrc.js` | TMDB client; VidSrc's latest feed and title info |
 | `css/app.css`, `fonts/` | Styles and the self-hosted Archivo font (SIL Open Font License) |

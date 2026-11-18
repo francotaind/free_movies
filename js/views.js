@@ -1,7 +1,7 @@
 // One function per page. Each returns { title, hero, body, mount } where
 // `body` is the page's HTML and `mount(root, isCurrent)` (optional) wires up
 // anything live and may return a cleanup function.
-import { COUNTRIES, VIDSRC_MIRRORS } from './config.js';
+import { COUNTRIES, SERVERS } from './config.js';
 import { html } from './html.js';
 import { mountPlayer } from './player.js';
 import { isEpisode, minutesLeft, percent, resumeSeconds, watchHash } from './store.js';
@@ -536,12 +536,13 @@ function watchPage({ heading, backHash, episodeLine, overview, controls, below, 
           <div class="watch__controls">
             ${controls || ''}
             <label class="field">Server
-              <select data-mirror aria-label="Player server">${VIDSRC_MIRRORS.map(
-                (mirror, index) => html`<option value="${mirror}">Server ${index + 1}</option>`,
+              <select data-mirror aria-label="Player server">${SERVERS.map(
+                (server) => html`<option value="${server.id}">${server.label}</option>`,
               )}</select>
             </label>
           </div>
           <p class="hint">Player not loading? Try another server.</p>
+          <p class="hint" data-server-note hidden>This server has no ads, but it can't save where you stop. Your place is kept from the other servers.</p>
         </div>
       </div>
       ${below || ''}
